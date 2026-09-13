@@ -40,38 +40,51 @@ const demoCredentialNames = [
 ] as const;
 
 function getDemoCredentials() {
-  const credentials = {
-    clientId: process.env.GOOGLE_DEMO_CLIENT_ID?.trim(),
-    clientSecret: process.env.GOOGLE_DEMO_CLIENT_SECRET?.trim(),
-    refreshToken: process.env.GOOGLE_DEMO_REFRESH_TOKEN?.trim(),
-  };
-  const values = [
-    credentials.clientId,
-    credentials.clientSecret,
-    credentials.refreshToken,
-  ];
+  const rawValues = [
+    process.env.GOOGLE_DEMO_CLIENT_ID,
+    process.env.GOOGLE_DEMO_CLIENT_SECRET,
+    process.env.GOOGLE_DEMO_REFRESH_TOKEN,
+  ] as const;
+  const values = rawValues.map((value) => value?.trim());
   const missing = demoCredentialNames.filter((_, index) => !values[index]);
+  const missingStates = missing.map((name) => {
+    const index = demoCredentialNames.indexOf(name);
+    const rawValue = rawValues[index];
+    const state =
+      rawValue === undefined
+        ? "undefined"
+        : rawValue.length === 0
+          ? "empty"
+          : "whitespace-only";
+    return `${name}=${state}`;
+  });
 
   return {
     credentials:
       missing.length === 0
         ? {
-            clientId: credentials.clientId as string,
-            clientSecret: credentials.clientSecret as string,
-            refreshToken: credentials.refreshToken as string,
+            clientId: values[0] as string,
+            clientSecret: values[1] as string,
+            refreshToken: values[2] as string,
           }
         : null,
     missing,
+    missingStates,
   };
 }
 
 async function getDemoAccessToken(): Promise<{
   accessToken: string | null;
   missing: readonly string[];
+  missingStates: readonly string[];
 }> {
   const configuration = getDemoCredentials();
   if (!configuration.credentials) {
-    return { accessToken: null, missing: configuration.missing };
+    return {
+      accessToken: null,
+      missing: configuration.missing,
+      missingStates: configuration.missingStates,
+    };
   }
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
@@ -92,7 +105,7 @@ async function getDemoAccessToken(): Promise<{
 
   const data = (await response.json()) as { access_token?: string };
   if (!data.access_token) throw new Error("Google returned no access token");
-  return { accessToken: data.access_token, missing: [] };
+  return { accessToken: data.access_token, missing: [], missingStates: [] };
 }
 
 async function createGmailDraft(accessToken: string, opportunityName: string) {
@@ -197,7 +210,7 @@ export async function POST(request: NextRequest) {
     const tokenResult = await getDemoAccessToken();
     if (!tokenResult.accessToken) {
       console.warn(
-        `[GrantMatch sandbox] Preview fallback: runtime is missing ${tokenResult.missing.join(", ")}`,
+        `[GrantMatch sandbox] Preview fallback: ${tokenResult.missingStates.join(", ")}`,
       );
       return NextResponse.json(
         {
@@ -212,6 +225,8 @@ export async function POST(request: NextRequest) {
             "Cache-Control": "no-store",
             "X-GrantMatch-Sandbox-Mode": "preview-missing-runtime-config",
             "X-GrantMatch-Missing-Config": tokenResult.missing.join(","),
+            "X-GrantMatch-Missing-Config-State":
+              tokenResult.missingStates.join(","),
           },
         },
       );
