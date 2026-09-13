@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getOpportunity } from "@/data/opportunities";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const requestSchema = z.object({
   kind: z.enum(["gmail", "calendar"]),
   opportunityId: z.string().min(1).max(100),
@@ -30,20 +33,54 @@ function base64Url(value: string) {
     .replaceAll("=", "");
 }
 
-async function getDemoAccessToken() {
-  const clientId = process.env.GOOGLE_DEMO_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_DEMO_CLIENT_SECRET;
-  const refreshToken = process.env.GOOGLE_DEMO_REFRESH_TOKEN;
+const demoCredentialNames = [
+  "GOOGLE_DEMO_CLIENT_ID",
+  "GOOGLE_DEMO_CLIENT_SECRET",
+  "GOOGLE_DEMO_REFRESH_TOKEN",
+] as const;
 
-  if (!clientId || !clientSecret || !refreshToken) return null;
+function getDemoCredentials() {
+  const credentials = {
+    clientId: process.env.GOOGLE_DEMO_CLIENT_ID?.trim(),
+    clientSecret: process.env.GOOGLE_DEMO_CLIENT_SECRET?.trim(),
+    refreshToken: process.env.GOOGLE_DEMO_REFRESH_TOKEN?.trim(),
+  };
+  const values = [
+    credentials.clientId,
+    credentials.clientSecret,
+    credentials.refreshToken,
+  ];
+  const missing = demoCredentialNames.filter((_, index) => !values[index]);
+
+  return {
+    credentials:
+      missing.length === 0
+        ? {
+            clientId: credentials.clientId as string,
+            clientSecret: credentials.clientSecret as string,
+            refreshToken: credentials.refreshToken as string,
+          }
+        : null,
+    missing,
+  };
+}
+
+async function getDemoAccessToken(): Promise<{
+  accessToken: string | null;
+  missing: readonly string[];
+}> {
+  const configuration = getDemoCredentials();
+  if (!configuration.credentials) {
+    return { accessToken: null, missing: configuration.missing };
+  }
 
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
+      client_id: configuration.credentials.clientId,
+      client_secret: configuration.credentials.clientSecret,
+      refresh_token: configuration.credentials.refreshToken,
       grant_type: "refresh_token",
     }),
     cache: "no-store",
@@ -55,7 +92,7 @@ async function getDemoAccessToken() {
 
   const data = (await response.json()) as { access_token?: string };
   if (!data.access_token) throw new Error("Google returned no access token");
-  return data.access_token;
+  return { accessToken: data.access_token, missing: [] };
 }
 
 async function createGmailDraft(accessToken: string, opportunityName: string) {
@@ -157,31 +194,51 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const accessToken = await getDemoAccessToken();
-    if (!accessToken) {
-      return NextResponse.json({
-        ok: true,
-        live: false,
-        id: `preview-${crypto.randomUUID()}`,
-        message:
-          "The safe action was validated. Add demo Google credentials at deployment to create the external object live.",
-      });
+    const tokenResult = await getDemoAccessToken();
+    if (!tokenResult.accessToken) {
+      console.warn(
+        `[GrantMatch sandbox] Preview fallback: runtime is missing ${tokenResult.missing.join(", ")}`,
+      );
+      return NextResponse.json(
+        {
+          ok: true,
+          live: false,
+          id: `preview-${crypto.randomUUID()}`,
+          message:
+            "The safe action was validated. Add demo Google credentials at deployment to create the external object live.",
+        },
+        {
+          headers: {
+            "Cache-Control": "no-store",
+            "X-GrantMatch-Sandbox-Mode": "preview-missing-runtime-config",
+            "X-GrantMatch-Missing-Config": tokenResult.missing.join(","),
+          },
+        },
+      );
     }
 
     const result =
       parsed.data.kind === "gmail"
-        ? await createGmailDraft(accessToken, opportunity.name)
-        : await createCalendarEvent(accessToken, opportunity.name);
+        ? await createGmailDraft(tokenResult.accessToken, opportunity.name)
+        : await createCalendarEvent(tokenResult.accessToken, opportunity.name);
 
-    return NextResponse.json({
-      ok: true,
-      live: true,
-      id: result.id,
-      message:
-        parsed.data.kind === "gmail"
-          ? "An unsent, recipient-free draft was created in the project demo account."
-          : "A fixed, non-sensitive event was created in the project demo calendar.",
-    });
+    return NextResponse.json(
+      {
+        ok: true,
+        live: true,
+        id: result.id,
+        message:
+          parsed.data.kind === "gmail"
+            ? "An unsent, recipient-free draft was created in the project demo account."
+            : "A fixed, non-sensitive event was created in the project demo calendar.",
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store",
+          "X-GrantMatch-Sandbox-Mode": "live",
+        },
+      },
+    );
   } catch {
     return NextResponse.json(
       {
