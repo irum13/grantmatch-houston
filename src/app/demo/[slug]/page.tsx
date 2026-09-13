@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { DemoWorkspace } from "@/components/demo-workspace";
-import { getDemoScenario } from "@/data/demo-scenarios";
+import { demoScenarios, getDemoScenario } from "@/data/demo-scenarios";
+
+export function generateStaticParams() {
+  return demoScenarios.map((scenario) => ({ slug: scenario.slug }));
+}
 
 export default async function DemoScenarioPage({
   params,
