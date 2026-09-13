@@ -4,6 +4,7 @@
 profile into explainable funding matches and an application-ready plan.**
 
 - **Live demo:** [grantmatch-houston.vercel.app](https://grantmatch-houston.vercel.app/)
+- **Video demo:** [Watch the GrantMatch walkthrough](https://drive.google.com/file/d/1v09JkP78D7Szs58tna3I5Rb3LjCZaPRK/view?usp=sharing)
 - **Repository:** [`irum13/grantmatch-houston`](https://github.com/irum13/grantmatch-houston)
 
 ## The Problem
