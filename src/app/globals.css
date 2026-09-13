@@ -564,6 +564,56 @@ button {
   font-weight: 800;
 }
 
+.judge-evidence {
+  grid-column: 1 / -1;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.judge-evidence-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 16px;
+  color: #c9d7d5;
+  font-size: 13px;
+}
+
+.judge-evidence-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #dff9f4;
+  font-weight: 750;
+}
+
+.judge-evidence-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-block: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.judge-evidence figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 24px;
+  padding: 16px;
+  color: white;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.judge-evidence figcaption span {
+  color: #a9c4c0;
+  font-size: 13px;
+}
+
 .page-intro {
   padding: 54px 0 28px;
 }
@@ -1532,6 +1582,17 @@ button {
   .onboarding-card {
     min-height: 0;
     padding: 22px 18px;
+  }
+
+  .judge-guide {
+    gap: 30px;
+    padding: 24px 18px;
+  }
+
+  .judge-evidence-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .footer-inner {

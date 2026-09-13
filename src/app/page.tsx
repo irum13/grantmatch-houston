@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -12,6 +13,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import liveGmailIntegration from "@/assets/live-gmail-integration.png";
 
 export default function Home() {
   return (
@@ -221,6 +223,30 @@ export default function Home() {
               Open a match and generate the application action plan.
             </div>
           </div>
+          <figure className="judge-evidence">
+            <div className="judge-evidence-meta">
+              <span className="judge-evidence-label">
+                <BadgeCheck size={16} />
+                Live deployed evidence
+              </span>
+              <span>Captured from the project demo account</span>
+            </div>
+            <Image
+              className="judge-evidence-image"
+              src={liveGmailIntegration}
+              alt="Gmail showing the unsent GrantMatch demo draft created by the live deployed integration"
+              sizes="(max-width: 900px) 100vw, 1120px"
+              unoptimized
+            />
+            <figcaption>
+              <strong>Live Gmail integration:</strong> GrantMatch created an
+              unsent draft in the project demo account.
+              <span>
+                This screenshot is evidence from the live deployed demo, not a
+                mockup.
+              </span>
+            </figcaption>
+          </figure>
         </div>
       </section>
     </>
