@@ -107,6 +107,13 @@ export function GoogleDrivePicker({
   }
 
   async function openPicker() {
+    if (process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === "static-judge") {
+      onMessage(
+        "The public judge build demonstrates Drive with seeded documents. Real per-file Google Picker access is enabled in the server deployment.",
+      );
+      return;
+    }
+
     setBusy(true);
     onMessage("");
     try {

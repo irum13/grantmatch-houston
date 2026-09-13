@@ -34,14 +34,29 @@ export default function MatchesPage() {
     setLiveOpportunities,
   } = useGrantMatch();
   const [filter, setFilter] = useState<Filter>("all");
+  const isStaticJudge =
+    process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === "static-judge";
   const [liveSearch, setLiveSearch] = useState<{
-    status: "idle" | "loading" | "complete" | "error";
+    status: "idle" | "loading" | "complete" | "error" | "static";
     opportunities: FundingOpportunity[];
     message?: string;
-  }>({ status: "idle", opportunities: [] });
+  }>({
+    status: isStaticJudge ? "static" : "idle",
+    opportunities: [],
+    message: isStaticJudge
+      ? "The public judge build uses bundled Houston and Texas data. Live federal search is enabled in the server deployment."
+      : undefined,
+  });
 
   useEffect(() => {
-    if (mode !== "real" || !profile || liveSearch.status !== "idle") return;
+    if (
+      isStaticJudge ||
+      mode !== "real" ||
+      !profile ||
+      liveSearch.status !== "idle"
+    ) {
+      return;
+    }
 
     Promise.all([
       fetch("/api/opportunities", { cache: "no-store" }).then(
@@ -89,6 +104,7 @@ export default function MatchesPage() {
     profile,
     liveSearch.status,
     setLiveOpportunities,
+    isStaticJudge,
   ]);
 
   const matches = useMemo(() => {
@@ -257,6 +273,8 @@ export default function MatchesPage() {
               {liveSearch.status === "idle" ||
               liveSearch.status === "loading"
                 ? "Searching Grants.gov for live federal opportunities…"
+                : liveSearch.status === "static"
+                  ? liveSearch.message
                 : liveSearch.status === "complete"
                   ? `${liveSearch.opportunities.length} live Grants.gov opportunities added. Detailed eligibility still requires verification.`
                   : liveSearch.message}

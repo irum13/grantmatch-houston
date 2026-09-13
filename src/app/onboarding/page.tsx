@@ -107,6 +107,14 @@ export default function OnboardingPage() {
       return;
     }
 
+    if (process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === "static-judge") {
+      setExtractionNote(
+        "The public judge build uses the confirmed fields below. Live AI extraction is enabled in the server deployment.",
+      );
+      setStep(2);
+      return;
+    }
+
     setExtracting(true);
     setExtractionNote("");
     try {

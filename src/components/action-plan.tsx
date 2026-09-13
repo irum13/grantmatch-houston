@@ -105,6 +105,17 @@ export function ActionPlan({ opportunityId }: { opportunityId: string }) {
   const emailBody = `Hello,\n\nI am evaluating ${selectedOpportunity.name} for a Houston-based ${founderProfile.industry.toLowerCase()} business. Could you confirm whether our ${founderProfile.stage.toUpperCase()}-stage, ${founderProfile.revenueBand.replaceAll("-", " ")} company is eligible and whether the program permits ${founderProfile.fundingNeeds.join(", ")} costs?\n\nThank you.`;
 
   async function runSandbox(kind: "gmail" | "calendar") {
+    if (process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === "static-judge") {
+      setReceipt({
+        ok: true,
+        live: false,
+        id: `static-preview-${kind}`,
+        message:
+          "Preview validated. Live sandbox writes are enabled in the server deployment with the dedicated Google test account.",
+      });
+      return;
+    }
+
     setRunning(true);
     setReceipt(null);
     try {
@@ -127,6 +138,16 @@ export function ActionPlan({ opportunityId }: { opportunityId: string }) {
   }
 
   async function runUserAction(kind: "gmail" | "calendar") {
+    if (process.env.NEXT_PUBLIC_DEPLOYMENT_MODE === "static-judge") {
+      setReceipt({
+        ok: false,
+        live: false,
+        message:
+          "The public judge build does not request personal Google access. Use the server deployment for OAuth actions.",
+      });
+      return;
+    }
+
     setRunning(true);
     setReceipt(null);
     try {
