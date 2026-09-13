@@ -34,6 +34,16 @@ Copy `.env.example` to `.env.local` only when configuring optional services.
 The guest demo and bundled opportunity catalog work without environment
 variables.
 
+Run the automated checks with:
+
+```bash
+npm run lint
+npm test
+npx playwright install chromium
+npm run test:e2e
+npm run build
+```
+
 ## Architecture
 
 - Next.js App Router and TypeScript
